@@ -31,7 +31,7 @@ jobs:
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
       - name: Build debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace --info 2>&1 | tail -100
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         if: success()
