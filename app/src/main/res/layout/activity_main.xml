@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#F5F5F5">
+
+    <!-- 标题 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="微信通知关键词监控"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="#075E54"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="监听微信通知，匹配关键词后自动提醒"
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="20dp" />
+
+    <!-- 状态 -->
+    <TextView
+        android:id="@+id/tv_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="状态：检测中..."
+        android:textSize="16sp"
+        android:padding="16dp"
+        android:background="#FFFFFF"
+        android:elevation="2dp"
+        android:layout_marginBottom="20dp" />
+
+    <!-- 关键词输入 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="关键词列表（逗号或换行分隔）"
+        android:textSize="14sp"
+        android:textColor="#333333"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/et_keywords"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:hint="例如：转账, 红包, 汇款, 到账"
+        android:inputType="textMultiLine"
+        android:background="#FFFFFF"
+        android:padding="12dp"
+        android:elevation="2dp"
+        android:gravity="top"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/btn_save"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="保存关键词"
+        android:layout_marginBottom="24dp"
+        android:backgroundTint="#075E54"
+        android:textColor="#FFFFFF" />
+
+    <!-- 服务授权按钮 -->
+    <Button
+        android:id="@+id/btn_check_service"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="开启通知监控权限"
+        android:backgroundTint="#128C7E"
+        android:textColor="#FFFFFF" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="点击后找到「微信通知监控」应用，开启通知使用权"
+        android:textSize="12sp"
+        android:textColor="#999999"
+        android:layout_marginTop="8dp"
+        android:gravity="center" />
+
+</LinearLayout>

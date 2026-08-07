@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 微信绿色背景圆角 -->
+    <path
+        android:fillColor="#128C7E"
+        android:pathData="M0,0h108v108h-108z"/>
+    <!-- W 图标 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,38L42,70L48,50L54,70L60,50L66,70L72,38L75,38L67,76L63,60L57,76L54,62L51,76L47,60L43,76L39,38Z"/>
+</vector>

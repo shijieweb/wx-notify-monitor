@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 微信绿色通知图标 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2z"/>
+    <path
+        android:fillColor="#075E54"
+        android:pathData="M9,8C9,7.45 9.45,7 10,7h4c0.55,0 1,0.45 1,1v6c0,0.55 -0.45,1 -1,1h-4c-0.55,0 -1,-0.45 -1,-1V8zM11,9h2v4h-2V9z"/>
+</vector>
