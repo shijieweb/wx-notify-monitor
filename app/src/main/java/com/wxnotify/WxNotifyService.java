@@ -1,26 +1,27 @@
 package com.wxnotify;
 
+import android.content.SharedPreferences;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.os.Build;
 import android.util.Log;
+import android.app.Activity;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
-import java.util.Set;
-import java.util.HashSet;
-
-/**
- * 微信通知监听服务
- * 监听 com.tencent.mm 的通知，提取文字内容，匹配关键词后触发提醒
- */
 public class WxNotifyService extends NotificationListenerService {
 
     private static final String TAG = "WxNotifyService";
-    private static final String WX_PACKAGE = "com.tencent.mm"; // 微信包名
+    private static final String WX_PACKAGE = "com.tencent.mm";
 
-    // SharedPreferences key 名称
+    // 统一用同一个 prefs 文件
     public static final String PREFS_NAME = "wx_notify_prefs";
     public static final String KEY_KEYWORDS = "keywords";
     public static final String KEY_ENABLED = "monitor_enabled";
+    public static final String KEY_DEBUG_LOG = "debug_log";
+    private static final String KEY_DEBUG_ENABLED = "debug_enabled";
+    private static final int MAX_LOG = 10;
 
     // 回调接口
     public static OnKeywordMatchedListener listener;
@@ -35,7 +36,6 @@ public class WxNotifyService extends NotificationListenerService {
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        // 只监听微信
         if (!WX_PACKAGE.equals(sbn.getPackageName())) {
             return;
         }
@@ -47,8 +47,10 @@ public class WxNotifyService extends NotificationListenerService {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 android.os.Bundle extras = sbn.getNotification().extras;
                 if (extras != null) {
-                    title = extras.getCharSequence("android.title", "").toString();
-                    content = extras.getCharSequence("android.text", "").toString();
+                    CharSequence t = extras.getCharSequence("android.title", null);
+                    CharSequence c = extras.getCharSequence("android.text", null);
+                    title = (t != null) ? t.toString() : "";
+                    content = (c != null) ? c.toString() : "";
                 }
             }
         } catch (Exception e) {
@@ -57,42 +59,43 @@ public class WxNotifyService extends NotificationListenerService {
 
         Log.d(TAG, "收到微信通知 - 标题: " + title + " | 内容: " + content);
 
+        // 记录到调试日志（所有通知都记）
+        addDebugLog(title, content);
+
         // 关键词匹配
-        if (matchKeyword(title, content)) {
-            Log.i(TAG, "关键词命中！");
+        String matched = matchKeyword(title, content);
+        if (matched != null) {
+            Log.i(TAG, "关键词命中: " + matched);
+            if (listener != null) {
+                listener.onKeywordMatched(title, content, matched);
+            }
         }
     }
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
-        if (!WX_PACKAGE.equals(sbn.getPackageName())) {
-            return;
-        }
-        Log.d(TAG, "微信通知已移除");
+        // 不做处理
     }
 
     @Override
     public void onListenerDisconnected() {
-        // 系统断开连接时，请求重新绑定（Android 7.0+）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             requestRebind(new android.content.ComponentName(this, WxNotifyService.class));
         }
     }
 
     /**
-     * 关键词匹配
-     * 从 SharedPreferences 读取用户配置的关键词列表
-     * 返回命中的关键词
+     * 关键词匹配，返回命中的关键词，不匹配返回 null
      */
-    private boolean matchKeyword(String title, String content) {
+    private String matchKeyword(String title, String content) {
         String keywordStr = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_KEYWORDS, "");
         if (keywordStr == null || keywordStr.trim().isEmpty()) {
-            return false;
+            return null;
         }
 
         boolean enabled = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getBoolean(KEY_ENABLED, true);
         if (!enabled) {
-            return false;
+            return null;
         }
 
         String[] keywords = keywordStr.split("[,\n]+");
@@ -101,13 +104,48 @@ public class WxNotifyService extends NotificationListenerService {
         for (String kw : keywords) {
             kw = kw.trim().toLowerCase();
             if (!kw.isEmpty() && text.contains(kw)) {
-                // 命中，触发提醒
-                if (listener != null) {
-                    listener.onKeywordMatched(title, content, kw);
-                }
-                return true;
+                return kw;
             }
         }
-        return false;
+        return null;
+    }
+
+    /**
+     * 将拦截记录写入 SharedPreferences
+     * 保留最近 MAX_LOG 条
+     */
+    private void addDebugLog(String title, String content) {
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            boolean debugOn = prefs.getBoolean(KEY_DEBUG_ENABLED, false);
+            if (!debugOn) return;
+
+            String existing = prefs.getString(KEY_DEBUG_LOG, "");
+            String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+            String line = time + "\n  " + title + "\n  " + content + "\n";
+            String updated = line + existing;
+
+            // 截取保留最近 MAX_LOG 条
+            int count = 0;
+            int pos = 0;
+            while (count < MAX_LOG && pos < updated.length()) {
+                int sep = updated.indexOf("\n", pos);
+                if (sep < 0) break;
+                pos = sep + 1;
+                if (pos < updated.length() && updated.charAt(pos) == '\n') {
+                    pos++;
+                    count++;
+                }
+            }
+            if (count >= MAX_LOG) {
+                updated = updated.substring(0, pos);
+            }
+
+            prefs.edit().putString(KEY_DEBUG_LOG, updated).apply();
+            Log.d(TAG, "调试日志已更新: " + count + " 条");
+
+        } catch (Exception e) {
+            Log.e(TAG, "addDebugLog 失败: " + e.getMessage());
+        }
     }
 }
