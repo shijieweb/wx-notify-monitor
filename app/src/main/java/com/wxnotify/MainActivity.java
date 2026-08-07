@@ -1,19 +1,18 @@
 package com.wxnotify;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.Manifest;
 import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.ComponentName;
-import android.content.pm.PackageManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
-import android.os.PowerManager;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
@@ -22,19 +21,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
-import androidx.core.content.ContextCompat;
-
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -42,22 +32,15 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "wx_notify_main";
     private static final String KEY_DEBUG = "debug_enabled";
     private static final String KEY_DEBUG_LOG = "debug_log";
-    private static final int MAX_LOG = 10;
+    private static final String KEY_VIBRATE = "vibrate_on";
+    private static final String KEY_RING = "ring_on";
 
     private EditText etKeywords;
     private Button btnSave, btnCheckService, btnDebug, btnClearDebug;
+    private SwitchCompat switchVibrate, switchRing;
     private TextView tvStatus, tvDebug;
     private LinearLayout panelDebug;
     private boolean debugEnabled = false;
-
-    private final ActivityResultLauncher<String> requestPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (isGranted) {
-                    showToast("通知权限已授予");
-                } else {
-                    showToast("通知权限被拒绝");
-                }
-            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,7 +51,6 @@ public class MainActivity extends AppCompatActivity {
         initViews();
         loadSettings();
 
-        // 设置服务监听回调
         WxNotifyService.setListener((title, content, keyword) -> {
             runOnUiThread(() -> triggerAlert(title, content, keyword));
         });
@@ -85,11 +67,26 @@ public class MainActivity extends AppCompatActivity {
         tvStatus = findViewById(R.id.tv_status);
         tvDebug = findViewById(R.id.tv_debug);
         panelDebug = findViewById(R.id.panel_debug);
+        switchVibrate = findViewById(R.id.switch_vibrate);
+        switchRing = findViewById(R.id.switch_ring);
 
-        btnSave.setOnClickListener(v -> saveKeywords());
+        btnSave.setOnClickListener(v -> saveSettings());
         btnCheckService.setOnClickListener(v -> openNotificationAccess());
         btnDebug.setOnClickListener(v -> toggleDebug());
-        btnClearDebug.setOnClickListener(v -> clearDebugLog());
+
+        SharedPreferences mainPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        switchVibrate.setChecked(mainPrefs.getBoolean(KEY_VIBRATE, true));
+        switchRing.setChecked(mainPrefs.getBoolean(KEY_RING, true));
+
+        switchVibrate.setOnCheckedChangeListener((v, isChecked) -> saveSwitches());
+        switchRing.setOnCheckedChangeListener((v, isChecked) -> saveSwitches());
+
+        btnClearDebug.setOnClickListener(v -> {
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                    .edit().putString(KEY_DEBUG_LOG, "").apply();
+            tvDebug.setText("暂无记录");
+            showToast("调试日志已清空");
+        });
     }
 
     private void createNotificationChannel() {
@@ -100,6 +97,8 @@ public class MainActivity extends AppCompatActivity {
                     NotificationManager.IMPORTANCE_HIGH
             );
             channel.setDescription("当微信消息包含关键词时发出提醒");
+            channel.enableVibration(true);
+            channel.setVibrationPattern(new long[]{0, 500, 200, 500, 200, 500});
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
                 manager.createNotificationChannel(channel);
@@ -108,32 +107,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadSettings() {
-        String keywords = getSharedPreferences(WxNotifyService.PREFS_NAME, MODE_PRIVATE)
-                .getString(WxNotifyService.KEY_KEYWORDS, "");
-        etKeywords.setText(keywords);
+        SharedPreferences svcPrefs = getSharedPreferences(WxNotifyService.PREFS_NAME, MODE_PRIVATE);
+        etKeywords.setText(svcPrefs.getString(WxNotifyService.KEY_KEYWORDS, ""));
 
-        debugEnabled = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getBoolean(KEY_DEBUG, false);
+        SharedPreferences mainPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        debugEnabled = mainPrefs.getBoolean(KEY_DEBUG, false);
         updateDebugPanel();
     }
 
-    private void saveKeywords() {
+    private void saveSettings() {
         String keywords = etKeywords.getText().toString().trim();
         getSharedPreferences(WxNotifyService.PREFS_NAME, MODE_PRIVATE)
                 .edit()
                 .putString(WxNotifyService.KEY_KEYWORDS, keywords)
                 .apply();
-        showToast("关键词已保存: " + keywords.replace(",", " | "));
+        showToast("关键词已保存");
+    }
+
+    private void saveSwitches() {
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_VIBRATE, switchVibrate.isChecked())
+                .putBoolean(KEY_RING, switchRing.isChecked())
+                .apply();
     }
 
     private void checkServiceStatus() {
         boolean enabled = isNotificationListenerEnabled();
-        if (enabled) {
-            tvStatus.setText("状态：服务已开启");
-            tvStatus.setTextColor(0xFF4CAF50);
-        } else {
-            tvStatus.setText("状态：服务未开启，请点击下方按钮授权");
-            tvStatus.setTextColor(0xFFFF5722);
-        }
+        tvStatus.setText(enabled ? "状态：服务已开启" : "状态：服务未开启，请点击开启服务");
+        tvStatus.setTextColor(enabled ? 0xFF4CAF50 : 0xFFFF5722);
     }
 
     private boolean isNotificationListenerEnabled() {
@@ -149,29 +151,51 @@ public class MainActivity extends AppCompatActivity {
             try {
                 startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));
             } catch (Exception e) {
-                Intent intent = new Intent(Settings.ACTION_SETTINGS);
-                startActivity(intent);
+                startActivity(new Intent(Settings.ACTION_SETTINGS));
                 Toast.makeText(this, "请手动找到「通知使用权」设置", Toast.LENGTH_LONG).show();
             }
         } else {
-            showToast("服务已开启，无需重复授权");
+            showToast("服务已开启");
         }
         checkServiceStatus();
     }
 
-    /**
-     * 触发提醒：震动 + 铃声（不发通知栏弹窗）
-     */
     private void triggerAlert(String title, String content, String keyword) {
-        // 更新主界面显示
-        tvStatus.setText("关键词命中！[" + keyword + "]\n来自: " + title);
+        tvStatus.setText("命中：" + keyword + "\n" + title + "\n" + content);
         tvStatus.setTextColor(0xFFE91E63);
 
-        // 震动
-        vibrate();
+        sendKeywordNotification(keyword, title, content);
 
-        // 播放系统提示音
-        playSystemSound();
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        if (prefs.getBoolean(KEY_VIBRATE, true)) vibrate();
+        if (prefs.getBoolean(KEY_RING, true)) playRing();
+    }
+
+    private void sendKeywordNotification(String keyword, String title, String content) {
+        try {
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pi = PendingIntent.getActivity(this, 0, intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_notify)
+                    .setContentTitle("【" + keyword + "】" + title)
+                    .setContentText(content.length() > 60 ? content.substring(0, 60) + "…" : content)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setContentIntent(pi);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+                NotificationCompat.BigTextStyle style = new NotificationCompat.BigTextStyle()
+                        .bigText(content);
+                builder.setStyle(style);
+            }
+
+            NotificationManagerCompat.from(this).notify(1, builder.build());
+        } catch (Exception e) {
+            // 通知失败不影响震动和铃声
+        }
     }
 
     private void vibrate() {
@@ -186,19 +210,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void playSystemSound() {
+    private void playRing() {
         try {
             Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             android.media.Ringtone ringtone = RingtoneManager.getRingtone(this, notification);
-            if (ringtone != null) {
-                ringtone.play();
-            }
-        } catch (Exception e) {
-            // 忽略
-        }
+            if (ringtone != null) ringtone.play();
+        } catch (Exception e) { /* ignore */ }
     }
-
-    // ========== 调试面板 ==========
 
     private void toggleDebug() {
         debugEnabled = !debugEnabled;
@@ -214,6 +232,7 @@ public class MainActivity extends AppCompatActivity {
             btnDebug.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF9E9E9E));
             panelDebug.setVisibility(View.GONE);
         }
+        updateDebugPanel();
     }
 
     private void updateDebugPanel() {
@@ -221,48 +240,6 @@ public class MainActivity extends AppCompatActivity {
         String log = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 .getString(KEY_DEBUG_LOG, "");
         tvDebug.setText(log.isEmpty() ? "暂无记录" : log);
-    }
-
-    /** 由 WxNotifyService 调用，在后台线程添加拦截记录 */
-    public static void addDebugLog(android.app.Activity activity, String pkg, String title, String content) {
-        if (activity == null) return;
-        activity.runOnUiThread(() -> {
-            SharedPreferences prefs = activity.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-            String existing = prefs.getString(KEY_DEBUG_LOG, "");
-            String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
-            String line = time + " [" + pkg + "]\n  " + title + "\n  " + content + "\n";
-            String updated = (existing.isEmpty() ? "" : existing + "─────────────────\n") + line;
-
-            // 保留最近 MAX_LOG 条（简单计数）
-            int count = 0;
-            int pos = 0;
-            while (count < MAX_LOG && pos < updated.length()) {
-                int sep = updated.indexOf("─────────────────\n", pos);
-                if (sep < 0) break;
-                pos = sep + 18;
-                count++;
-            }
-            if (count >= MAX_LOG) {
-                int cutoff = updated.indexOf("─────────────────\n");
-                if (cutoff >= 0) {
-                    updated = updated.substring(cutoff + 18);
-                }
-            }
-
-            prefs.edit().putString(KEY_DEBUG_LOG, updated).apply();
-
-            // 如果 MainActivity 可见，更新显示
-            if (activity instanceof MainActivity) {
-                ((MainActivity) activity).tvDebug.setText(updated.isEmpty() ? "暂无记录" : updated);
-            }
-        });
-    }
-
-    private void clearDebugLog() {
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                .edit().putString(KEY_DEBUG_LOG, "").apply();
-        tvDebug.setText("暂无记录");
-        showToast("调试日志已清空");
     }
 
     private void showToast(String msg) {
@@ -273,5 +250,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         checkServiceStatus();
+        updateDebugPanel();
     }
 }

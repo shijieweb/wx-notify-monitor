@@ -39,6 +39,61 @@
         android:textSize="14sp"
         android:inputType="text" />
 
+    <!-- 铃声和震动开关 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="震动"
+                android:textSize="15sp"
+                android:textColor="#333" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switch_vibrate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:checked="true" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="铃声"
+                android:textSize="15sp"
+                android:textColor="#333" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switch_ring"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:checked="true" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -51,27 +106,27 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="保存关键词" />
+            android:text="保存" />
 
         <Button
             android:id="@+id/btn_check_service"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="6dp"
             android:text="开启服务" />
 
         <Button
             android:id="@+id/btn_debug"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="6dp"
             android:text="调试"
             android:backgroundTint="#9E9E9E" />
 
     </LinearLayout>
 
-    <!-- 调试面板，默认 gone -->
+    <!-- 调试面板 -->
     <LinearLayout
         android:id="@+id/panel_debug"
         android:layout_width="match_parent"
@@ -90,7 +145,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="最近拦截记录（最近10条）"
+                android:text="拦截记录（最近10条）"
                 android:textStyle="bold"
                 android:textColor="#333" />
 
@@ -126,7 +181,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="开启通知使用权后，服务会在后台监控微信消息，匹配关键词时触发震动和铃声提醒。"
+        android:text="开启通知使用权后，服务会在后台监控微信消息，匹配关键词时触发提醒。"
         android:textSize="12sp"
         android:textColor="#999"
         android:layout_marginTop="8dp" />
