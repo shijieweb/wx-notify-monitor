@@ -1,5 +1,11 @@
-plugins {
-    id 'com.android.application' version '8.2.0' apply false
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.2.0'
+    }
 }
 
 allprojects {
@@ -10,7 +16,6 @@ allprojects {
 
     configurations.all {
         resolutionStrategy {
-            // 统一 Kotlin 版本：1.9+ 版本已合并 jdk7/jdk8 模块
             force 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
             force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.22'
             force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22'
