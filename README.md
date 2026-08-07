@@ -31,37 +31,20 @@ Android App，监听微信通知，匹配关键词后自动提醒（声音+震�
 3. 开启开关
 
 ### 3. 测试
-让朋友发一条包含关键词的微信消息，或者自己在另一台设备发消息，验证是否触发提醒。
+让朋友发一条包含关键词的微信消息，验证是否触发提醒。
 
 ## 编译打包
 
-### 命令行
 ```bash
-# 生成 wrapper
-gradle wrapper
-
 # 打包 debug APK
 ./gradlew assembleDebug
 
-# 打包 release APK（需配置签名）
-./gradlew assembleRelease
+# APK 输出路径
+app/build/outputs/apk/debug/app-debug.apk
 ```
-
-APK 输出路径：`app/build/outputs/apk/debug/app-debug.apk`
-
-### Android Studio
-1. 用 Android Studio 打开项目根目录
-2. Sync Project with Gradle Files
-3. Run → Run 'app'
-
-### 手机上安装
-- 复制 APK 到手机，安装
-- 首次安装需要允许「安装未知来源应用」
-- 开启通知使用权
 
 ## 注意事项
 
-- Android 13+（API 33）需要额外授予通知权限（App 会在首次打开时请求）
-- 微信必须在后台运行才能接收通知（国产rom自启动限制需自行放行）
-- 华为/小米等系统需要额外设置自启动/后台保活
+- Android 13+（API 33）需要额外授予通知权限
+- 微信必须在后台运行才能接收通知
 - 关键词匹配不区分大小写
